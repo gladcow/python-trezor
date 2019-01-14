@@ -174,6 +174,7 @@ def reset(
         skip_backup=bool(skip_backup),
         no_backup=bool(no_backup),
     )
+    print(msg)
 
     resp = client.call(msg)
     if not isinstance(resp, proto.EntropyRequest):

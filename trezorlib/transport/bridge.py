@@ -67,6 +67,9 @@ class BridgeTransport(Transport):
             )
         return r
 
+    def has_debug(self) -> bool:
+        return bool(self.device.get("debug"))
+
     @classmethod
     def enumerate(cls):
         try:

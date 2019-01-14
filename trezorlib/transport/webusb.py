@@ -178,6 +178,9 @@ def is_trezor2(dev):
 def is_trezor2_bl(dev):
     return (dev.getVendorID(), dev.getProductID()) == DEV_TREZOR2_BL
 
+    def has_debug(self) -> bool:
+        return True
+
 
 def is_vendor_class(dev):
     configurationId = 0

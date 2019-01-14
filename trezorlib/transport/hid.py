@@ -172,6 +172,16 @@ def is_trezor2(dev):
 def is_trezor2_bl(dev):
     return (dev["vendor_id"], dev["product_id"]) == DEV_TREZOR2_BL
 
+    def has_debug(self) -> bool:
+        if self.protocol.VERSION >= 2:
+            return True
+        else:
+            # For v1 protocol, find debug USB interface for the same serial number
+            for debug in HidTransport.enumerate(debug=True):
+                if debug.device["serial_number"] == self.device["serial_number"]:
+                    return True
+        return False
+
 
 def is_wirelink(dev):
     return dev["usage_page"] == 0xFF00 or dev["interface_number"] == 0

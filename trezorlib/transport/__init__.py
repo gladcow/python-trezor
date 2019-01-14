@@ -135,3 +135,10 @@ def get_transport(path: str = None, prefix_search: bool = False) -> Transport:
         return transports[0].find_by_path(path, prefix_search=prefix_search)
 
     raise Exception("Could not find device by path: {}".format(path))
+
+
+def get_debug_transport() -> Transport:
+    for device in enumerate_devices():
+        if device.has_debug():
+            return device
+    raise TransportException("Debug device not available")
