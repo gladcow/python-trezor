@@ -207,7 +207,7 @@ class TestMsgSigntxDash(TrezorTest):
             == "01000000018abb1ba63185d1f0793bfce13c28c891672ec416e18498810ad64b871c5a5715010000006b483045022100f0442b6d9c7533cd6f74afa993b280ed9475276d69df4dac631bc3b5591ba71b022051daf125372c1c477681bbd804a6445d8ff6840901854fb0b485b1c6c7866c44012102936f80cac2ba719ddb238646eb6b78a170a55a52a9b9f08c43523a4a6bd5c896ffffffff0200286bee000000001976a914fd61dd017dad1f505c0511142cc9ac51ef3a5beb88acc095a905000000001976a914aa7a6a1f43dfc34d17e562ce1845b804b73fc31e88ac00000000"
         )
 
-    def test_send_dash_dip2(self):
+    def test_send_dash_dip2_proregtx(self):
         self.setup_mnemonic_allallall()
         inp1 = proto.TxInputType(
             address_n=parse_path("44'/1'/0'/0/0"),
@@ -360,5 +360,136 @@ class TestMsgSigntxDash(TrezorTest):
         assert (
             serialized_tx.hex()
             == "03000100018dc5f38fcb801a6fad31de622a226e5b1886b1fecac41ada087d5c23be016e69010000006a47304402207aa4fcd61c65b49338d27471c0a1434eeea096a5b95f2ab45e080b4cd2d53e71022064756204e10a8f61041b559949ba6fd5a810ee8c252d258de122a66bb29602c80121030e669acac1f280d1ddf441cd2ba5e97417bf2689e4bbec86df4f831bf9f7ffd0ffffffff0200e87648170000001976a9149e87e0cb3156d46468dde382b57964a9810991c088ac98b9512a000000001976a914a579388225827d9f2fe9014add644487808c695d88ac00000000d1010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c5a2d505da4f03b2776f588e4fee0118248dc044126d93a264c52fb494ed0eaa6ae71c2843fccf152e42b436193e16218256080339155421de6ecb19bede83b125ac0d50c5a2d505da4f03b2776f588e4fee0118248dc04400001976a914a579388225827d9f2fe9014add644487808c695d88ac3a4300634f140abdee611d089415e50795c9bfdccb9b6059d55a6a698f08b2b100"
+        )
+
+    def test_send_dash_dip2_proupservtx(self):
+        self.setup_mnemonic_allallall()
+        inp1 = proto.TxInputType(
+            address_n=parse_path("44'/1'/0'/0/0"),
+            # dash testnet:ybQPZRHKifv9BDqMN2cieCsMzQQ1BuDoR5
+            amount=100710000000,
+            prev_hash=bytes.fromhex(
+                "696e01be235c7d08da1ac4cafeb186185b6e222a62de31ad6f1a80cb8ff3c58d"
+            ),
+            prev_index=1,
+            script_type=proto.InputScriptType.SPENDADDRESS,
+        )
+        out1 = proto.TxOutputType(
+            address_n=parse_path("44'/1'/0'/0/0"),
+            amount=100709999750,
+            script_type=proto.OutputScriptType.PAYTOADDRESS,
+        )
+        extra_payload = bytes.fromhex(
+                "b5010061d48e8bd82f0fe9dba3413753c90b695ae75dccee5b3401e76df29b9d33a13900000000000000000000ffffc6c74af14e1f003a4300634f140abdee611d089415e50795c9bfdccb9b6059d55a6a698f08b2b11612dc4544fc470415cdd4be5659fee6aa7d84c3572c712f5904b2e5d38cb217762717d88e4e1a956a9e82ce132e2b9b144e26cb3ff1e53675ede2769d99f46796ea0b8cbf33b78c15fe9a437dc4d1131ce2af8fd2ed5b306b326f9fcffcd416"
+            )
+        txdata = proto.SignTx()
+        txdata.version = (2 << 16) | 3
+        with self.client:
+            self.client.set_expected_responses(
+                [
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXMETA,
+                        details=proto.TxRequestDetailsType(tx_hash=inp1.prev_hash),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=0, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=1, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=0, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=1, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=174,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=174,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=174,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.TxRequest(request_type=proto.RequestType.TXFINISHED),
+                ]
+            )
+            _, serialized_tx = btc.sign_tx(
+                self.client, "Dash Testnet", [inp1], [out1], details=txdata, prev_txes=TX_API, extra_payload=extra_payload
+            )
+        assert (
+            serialized_tx.hex()
+            == "03000200018dc5f38fcb801a6fad31de622a226e5b1886b1fecac41ada087d5c23be016e69010000006a473044022028725d233d9fc9587db3d2daa61d8c3b25018344b324e03e1ceb29811b017e1e02201b9daf323c3237570e9d2772525d9c4361b8dfa9b0a5699507c0aaa6274d364d0121030e669acac1f280d1ddf441cd2ba5e97417bf2689e4bbec86df4f831bf9f7ffd0ffffffff0186a4c872170000001976a914a579388225827d9f2fe9014add644487808c695d88ac00000000b5010061d48e8bd82f0fe9dba3413753c90b695ae75dccee5b3401e76df29b9d33a13900000000000000000000ffffc6c74af14e1f003a4300634f140abdee611d089415e50795c9bfdccb9b6059d55a6a698f08b2b11612dc4544fc470415cdd4be5659fee6aa7d84c3572c712f5904b2e5d38cb217762717d88e4e1a956a9e82ce132e2b9b144e26cb3ff1e53675ede2769d99f46796ea0b8cbf33b78c15fe9a437dc4d1131ce2af8fd2ed5b306b326f9fcffcd416"
         )
 
