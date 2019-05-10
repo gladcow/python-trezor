@@ -361,6 +361,160 @@ class TestMsgSigntxDash(TrezorTest):
             == "03000100018dc5f38fcb801a6fad31de622a226e5b1886b1fecac41ada087d5c23be016e69010000006a473044022038e36c984245923623774346e754581e2042672fc464ae85b404ea45c271d65e0220084aedc68be95ad2d3918ba933e7ea9038056beeae280a2d42fa445b8bdf2ac90121030e669acac1f280d1ddf441cd2ba5e97417bf2689e4bbec86df4f831bf9f7ffd0ffffffff0200e87648170000001976a9149e87e0cb3156d46468dde382b57964a9810991c088ac98b9512a000000001976a914a579388225827d9f2fe9014add644487808c695d88ac00000000d1010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c5a2d505da4f03b2776f588e4fee0118248dc044126d93a264c52fb494ed0eaa6ae71c2843fccf152e42b436193e16218256080339155421de6ecb19bede83b125ac0d50c5a2d505da4f03b2776f588e4fee0118248dc04400001976a914a579388225827d9f2fe9014add644487808c695d88ac00a5d7acb20a7aea830918f00bec115567e48a6300a26f2ffefd51e29d3e80c300"
         )
 
+    def test_send_dash_dip2_proregtx_external(self):
+        self.setup_mnemonic_allallall()
+        inp1 = proto.TxInputType(
+            address_n=parse_path("44'/1'/0'/0/0"),
+            # dash testnet:ybQPZRHKifv9BDqMN2cieCsMzQQ1BuDoR5
+            amount=100710000000,
+            prev_hash=bytes.fromhex(
+                "696e01be235c7d08da1ac4cafeb186185b6e222a62de31ad6f1a80cb8ff3c58d"
+            ),
+            prev_index=1,
+            script_type=proto.InputScriptType.SPENDADDRESS,
+        )
+        out1 = proto.TxOutputType(
+            address_n=parse_path("44'/1'/0'/0/0"),
+            amount=100709999750,
+            script_type=proto.OutputScriptType.PAYTOADDRESS,
+        )
+        extra_payload = bytes.fromhex(
+                "fd12010100000000009b9054ff7839b940277b8eb8211570b2f16850ef729ee635e24d722fbc4a46230100000000000000000000000000ffffc6c74af14e1fc5a2d505da4f03b2776f588e4fee0118248dc044972f4481e23ea3b34a974349c44d8b96974ffb1e83cecb879564dcaa8b3ef58d84866dd672ad3d2db73904a9fa5c3b06c5a2d505da4f03b2776f588e4fee0118248dc0440b091976a914a579388225827d9f2fe9014add644487808c695d88ac00a5d7acb20a7aea830918f00bec115567e48a6300a26f2ffefd51e29d3e80c3411f43ef123ad4d5b1aff6c3834f6fc7589ce550e30d4d01e9e550fe39744f78753711e328b10282f04ff32853cb85d40694d6190c2de23d900be487847c5fb9b8be"
+            )
+        collateral_id = bytes.fromhex("23464abc2f724de235e69e72ef5068f1b2701521b88e7b2740b93978ff54909b")
+        collateral_out = 1
+        txdata = proto.SignTx()
+        txdata.version = (1 << 16) | 3
+        with self.client:
+            self.client.set_expected_responses(
+                [
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXMETA,
+                        details=proto.TxRequestDetailsType(tx_hash=inp1.prev_hash),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=0, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=1, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=0, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=1, tx_hash=inp1.prev_hash
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=269,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=collateral_out,
+                            tx_hash=collateral_id,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(
+                            request_index=collateral_out,
+                            tx_hash=collateral_id,
+                        ),
+                    ),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXINPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=269,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXOUTPUT,
+                        details=proto.TxRequestDetailsType(request_index=0),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=8,
+                            extra_data_offset=0,
+                        ),
+                    ),
+                    proto.TxRequest(
+                        request_type=proto.RequestType.TXEXTRADATA,
+                        details=proto.TxRequestDetailsType(
+                            extra_data_len=269,
+                            extra_data_offset=8,
+                        ),
+                    ),
+                    proto.TxRequest(request_type=proto.RequestType.TXFINISHED),
+                ]
+            )
+            _, serialized_tx = btc.sign_tx(
+                self.client, "Dash Testnet", [inp1], [out1], details=txdata,
+                prev_txes=TX_API, extra_payload=extra_payload,
+                external_txes=[collateral_id]
+            )
+        assert (
+            serialized_tx.hex()
+            == "03000100018dc5f38fcb801a6fad31de622a226e5b1886b1fecac41ada087d5c23be016e69010000006b4830450221008fe8324ab3322dbe1c5272b6fea297c648bef75685b485fe6edcb3ebacd0376802202b63d5646d0180ff5597f559546b25e1c7d13709625ed5601099bb6f1e313aac0121030e669acac1f280d1ddf441cd2ba5e97417bf2689e4bbec86df4f831bf9f7ffd0ffffffff0186a4c872170000001976a914a579388225827d9f2fe9014add644487808c695d88ac00000000fd12010100000000009b9054ff7839b940277b8eb8211570b2f16850ef729ee635e24d722fbc4a46230100000000000000000000000000ffffc6c74af14e1fc5a2d505da4f03b2776f588e4fee0118248dc044972f4481e23ea3b34a974349c44d8b96974ffb1e83cecb879564dcaa8b3ef58d84866dd672ad3d2db73904a9fa5c3b06c5a2d505da4f03b2776f588e4fee0118248dc0440b091976a914a579388225827d9f2fe9014add644487808c695d88ac00a5d7acb20a7aea830918f00bec115567e48a6300a26f2ffefd51e29d3e80c3411f43ef123ad4d5b1aff6c3834f6fc7589ce550e30d4d01e9e550fe39744f78753711e328b10282f04ff32853cb85d40694d6190c2de23d900be487847c5fb9b8be"
+        )
+
     def test_send_dash_dip2_proupservtx(self):
         self.setup_mnemonic_allallall()
         inp1 = proto.TxInputType(
