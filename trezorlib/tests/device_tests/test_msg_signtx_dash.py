@@ -445,13 +445,6 @@ class TestMsgSigntxDash(TrezorTest):
                             tx_hash=collateral_id,
                         ),
                     ),
-                    proto.TxRequest(
-                        request_type=proto.RequestType.TXOUTPUT,
-                        details=proto.TxRequestDetailsType(
-                            request_index=collateral_out,
-                            tx_hash=collateral_id,
-                        ),
-                    ),
                     proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
                     proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
                     proto.ButtonRequest(code=proto.ButtonRequestType.SignTx),
